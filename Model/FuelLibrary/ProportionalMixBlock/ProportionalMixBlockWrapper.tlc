@@ -1,0 +1,45 @@
+%% 
+%% File : ProportionalMixBlockWrapper.tlc 
+%% Abstract: 
+%%    Script to inline C functions into Simulink model
+%%
+
+%implements "ProportionalMixBlockWrapper" "C"
+
+%assign GenRTModel = TLC_TRUE
+
+%% Insert headers and include files
+%function BlockTypeSetup(block, system) void
+  %openfile buffer
+    #include "Instrumentation.h"
+    #include "ProportionalMixBlock.h"
+  %closefile buffer
+  %<LibCacheFunctionPrototype(buffer)>
+%endfunction 
+
+%% Insert startup function 
+%function Start(block, system) Output
+	OpenProportionalMix();
+%endfunction
+
+%% Insert functions for all signals
+%function Outputs(block, system) Output
+  /* Outputs for ProportionalMixBlock %<LibGetBlockName(block)> */
+  {
+    real_T *sig1  = %<LibBlockInputSignalAddr(0, "", "", 0)>; 
+    real_T *mass1 = %<LibBlockInputSignalAddr(1, "", "", 0)>; 
+    real_T *sig2  = %<LibBlockInputSignalAddr(2, "", "", 0)>; 
+	real_T *mass2 = %<LibBlockInputSignalAddr(3, "", "", 0)>;
+	
+    real_T *sigOut      = %<LibBlockOutputSignalAddr(0, "", "", 0)>;      
+    real_T *sigOutValid = %<LibBlockOutputSignalAddr(1, "", "", 0)>;      
+
+	GetProportionalMixSignal(*mass1,*sig1,*mass2,*sig2,sigOut,sigOutValid);
+  }
+%endfunction
+
+%% Insert closedown function 
+%function Terminate(block, system) Output
+	CloseProportionalMix();
+%endfunction
+

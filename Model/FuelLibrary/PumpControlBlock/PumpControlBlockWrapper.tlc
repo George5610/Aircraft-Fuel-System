@@ -1,0 +1,55 @@
+%% 
+%% File : PumpControlBlockWrapper.tlc 
+%% Abstract: 
+%%    Script to inline C functions into Simulink model
+%%
+
+%implements "PumpControlBlockWrapper" "C"
+
+%assign GenRTModel = TLC_TRUE
+
+%% Insert headers and include files
+%function BlockTypeSetup(block, system) void
+  %openfile buffer
+    #include "Instrumentation.h"
+    #include "PumpControlBlock.h"
+  %closefile buffer
+  %<LibCacheFunctionPrototype(buffer)>
+%endfunction 
+
+%% Insert startup function 
+%function Start(block, system) Output
+  /* Inserted by PumpControlBlockWrapper.tlc */
+  OpenPumpControl();
+%endfunction
+
+%% Insert functions for all signals
+%function Outputs(block, system) Output
+  /* Outputs for PumpControlBlock %<LibGetBlockName(block)> */
+  {
+    real_T *en          = %<LibBlockInputSignalAddr(0, "", "", 0)>; 
+    real_T *bypass      = %<LibBlockInputSignalAddr(1, "", "", 0)>; 
+    real_T *pos         = %<LibBlockInputSignalAddr(2, "", "", 0)>; 
+    real_T *srcIn       = %<LibBlockInputSignalAddr(3, "", "", 0)>; 
+    real_T *sinkIn      = %<LibBlockInputSignalAddr(4, "", "", 0)>; 
+    real_T *inletPress  = %<LibBlockInputSignalAddr(5, "", "", 0)>; 
+	real_T *outletPress = %<LibBlockInputSignalAddr(6, "", "", 0)>;
+    real_T *thruFlow    = %<LibBlockInputSignalAddr(7, "", "", 0)>; 
+	
+    real_T *srcOut    = %<LibBlockOutputSignalAddr(0, "", "", 0)>;      
+    real_T *pressOut  = %<LibBlockOutputSignalAddr(1, "", "", 0)>;      
+    real_T *resOut    = %<LibBlockOutputSignalAddr(2, "", "", 0)>;      
+    real_T *nrvEnOut  = %<LibBlockOutputSignalAddr(3, "", "", 0)>;      
+    real_T *flowOut   = %<LibBlockOutputSignalAddr(4, "", "", 0)>;      
+
+	RunPumpControl(*en,*bypass,*pos,*srcIn,*sinkIn,*inletPress,*outletPress,*thruFlow,
+				   srcOut,pressOut,resOut,nrvEnOut,flowOut);
+  }
+%endfunction
+
+%% Insert closedown function 
+%function Terminate(block, system) Output
+  /* Inserted by PumpControlBlockWrapper.tlc */
+  ClosePumpControl();
+%endfunction
+

@@ -1,0 +1,32 @@
+%% 
+%% File : OrifaceControlBlockWrapper.tlc 
+%% Abstract: 
+%%    Script to inline C functions into Simulink model
+%%
+
+%implements "OrifaceControlBlockWrapper" "C"
+
+%assign GenRTModel = TLC_TRUE
+
+%% Insert headers and include files
+%function BlockTypeSetup(block, system) void
+  %openfile buffer
+    #include "Instrumentation.h"
+    #include "OrifaceControlBlock.h"
+  %closefile buffer
+  %<LibCacheFunctionPrototype(buffer)>
+%endfunction 
+
+%% Insert functions for all signals
+%function Outputs(block, system) Output
+  /* Inserted by OrifaceControlBlockWrapper.tlc */
+  {
+    real_T *flow = %<LibBlockInputSignalAddr(0, "", "", 0)>; 
+    real_T *c    = %<LibBlockInputSignalAddr(1, "", "", 0)>; 
+    real_T *prev = %<LibBlockInputSignalAddr(2, "", "", 0)>; 
+    real_T *res  = %<LibBlockOutputSignalAddr(0, "", "", 0)>;      
+
+    *res = GetOrifaceRes(*flow,*c,*prev);
+  }
+%endfunction
+

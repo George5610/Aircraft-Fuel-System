@@ -1,0 +1,47 @@
+%% 
+%% File : InletControlBlockWrapper.tlc 
+%% Abstract: 
+%%    Script to inline C InletControlBlock functions into Simulink model
+%%
+
+%implements "InletControlBlockWrapper" "C"
+
+%assign GenRTModel = TLC_TRUE
+
+%% Insert headers and include files
+%function BlockTypeSetup(block, system) void
+  %openfile buffer
+    #include "Instrumentation.h"
+    #include "InletControlBlock.h"
+  %closefile buffer
+  %<LibCacheFunctionPrototype(buffer)>
+%endfunction 
+
+%% Insert startup function 
+%function Start(block, system) Output
+	/* Inserted by InletControlBlockWrapper.tlc */
+	OpenInletControlBlock();
+%endfunction
+
+%% Insert functions for all signals
+%function Outputs(block, system) Output
+	/* Inserted by InletControlBlockWrapper.tlc */
+	{
+		real_T *pipeCovered  = %<LibBlockInputSignalAddr(0, "", "", 0)>;
+		real_T *outsidePress = %<LibBlockInputSignalAddr(1, "", "", 0)>;
+		real_T *insidePress  = %<LibBlockInputSignalAddr(2, "", "", 0)>;
+		real_T *inFlow       = %<LibBlockInputSignalAddr(3, "", "", 0)>;
+		real_T *error        = %<LibBlockInputSignalAddr(4, "", "", 0)>;
+		real_T *inData       = %<LibBlockInputSignalAddr(5, "", "", 0)>;
+		real_T *flowEnabled  = %<LibBlockOutputSignalAddr(0, "", "", 0)>;
+		real_T *outData      = %<LibBlockOutputSignalAddr(1, "", "", 0)>;
+		*flowEnabled = RunInletControl(*pipeCovered,*outsidePress,*insidePress,*inFlow,*error,inData,outData);
+	}
+%endfunction
+
+%% Insert closedown function 
+%function Terminate(block, system) Output
+	/* Inserted by InletControlBlockWrapper.tlc */
+	CloseInletControlBlock();
+%endfunction
+
