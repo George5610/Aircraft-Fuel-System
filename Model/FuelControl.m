@@ -84,5 +84,5 @@ function [LI,RI] = ExampleSubFunction(L,R)
     if (R >= 0.5) 
         RI = 1;
     end
-    George is a crackhead
+  
 end
