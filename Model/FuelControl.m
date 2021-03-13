@@ -3,7 +3,7 @@
 
 function y = FuelControl(u)
     % signals on Simulink schamtic
-    %
+    %t
 
     % Time in the outside world 
     time = u(1);
@@ -27,9 +27,10 @@ function y = FuelControl(u)
     RFeedPump1Stat = u(14); % RFP1Stat (Right Feed Pump 1 Status) 
     RFeedPump2Stat = u(15); % RFP2Stat (Right Feed Pump 2 Status)
     RTransPumpStat = u(16); % RTPStat(Right Transfer Pump Status)
-
+    RThrottleIN = u(17);
+    LThrottleIN = u(18);
     % Instrumentation
-    fprintf('Controller: Time[%f] Left[%f/%f] Right[%f/%f]\n',time,LProbe1,LProbe2,RProbe1,RProbe2);
+  %  fprintf('Controller: Time[%f] Left[%f/%f] Right[%f/%f]\n',time,LProbe1,LProbe2,RProbe1,RProbe2);
     
     % Outputs defaults used if controller does nothing
     LThrottle = 0.0;  % Left engine throttle
@@ -45,44 +46,87 @@ function y = FuelControl(u)
     RSOn      = 0.0;  % Right feed pump B on
     RTOn      = 0.0;  % Right transfer pump on
     XFOpen    = 0.0;  % Crossfeed valve open
-    BOpen     = 0.0;  % Bowser valve open 
+    BOpen     = 0.0;  % Bowser valve closed
+    RTank_Mass = 0.0;
+    LTank_Mass = 0.0;
     
-    % Control stuff could go here
-    LIOpen    = 1.0;
-    BOpen     = 1.0;  
-  
+
+    
+%% right tank volume
+    if RProbe1 <= 5/6
+        RFuel_Vol = (0.5 * (tand(5.711) * (0.6 * RProbe1)) * (0.6 * RProbe1)) * 100;
+        
+    elseif RProbe1 == 1
+        RFuel_Vol = (0.5 * 5 * 0.5) + (0.5 * RProbe2) * 5;
+        
+    else
+        RFuel_Vol = (0.5 * 5 * 0.5) + ((0.6 * RProbe1) - 0.5) * 5;
+    end
+     
+        
+%% left tank volume
+    if LProbe1 <= 5/6
+        LFuel_Vol = (0.5 * (tand(5.711) * (0.6 * LProbe1)) * (0.6 * LProbe1)) * 100;
+        
+    elseif LProbe1 == 1
+        LFuel_Vol = (0.5 * 5 * 0.5) + (0.5 * LProbe2) * 5;
+        
+    else
+        LFuel_Vol = (0.5 * 5 * 0.5) + ((0.6 * LProbe1) - 0.5) * 5;
+    end
+    
+%% Tank Litres to KG
+
+    RTank_Mass = RFuel_Vol * 797;
+    LTank_Mass = LFuel_Vol * 797;
+
+    fprintf('Tank Lvls: Time[%f] Right[%f] Left[%f]\n',time,RTank_Mass,LTank_Mass);
+    
+%% Bowser Control (temp sol)
+    Total_Fuel = RTank_Mass + LTank_Mass;
+    if  RefuelSwitch == 1 && Total_Fuel < RefuelQuantity
+        BOpen = 1;
+        RIOpen = 1;
+        LIOpen = 1;
+    else 
+        BOpen = 0;
+        RIOpen = 0;
+        LIOpen = 0;
+    end
+ 
+%% Throttle Control
+
+    RThrottleIN = RThrottle;
+    LThrottleIN = LThrottle;
+    
+    if StartSwitch == 1
+       RMOn = 1;
+       LMOn = 1;
+       REOpen = 1;
+       LEOpen = 1;
        
-    % Pack the outputs
-    y(1)  = LThrottle;
-    y(2)  = LEOpen   ;
-    y(3)  = LIOpen   ;
-    y(4)  = LMOn     ;
-    y(5)  = LSOn     ;
-    y(6)  = LTOn     ;
-    y(7)  = RThrottle;
-    y(8)  = REOpen   ;
-    y(9)  = RIOpen   ;
-    y(10) = RMOn     ;
-    y(11) = RSOn     ;
-    y(12) = RTOn     ;
-    y(13) = XFOpen   ;
-    y(14) = BOpen    ;  
-
+    else
+       RMOn = 0;
+       LMOn = 0;
+       REOpen = 0;
+       LEOpen = 0;
+    end
+%% Pack the outputs
+    y(1)  = LThrottle ;
+    y(2)  = LEOpen    ;
+    y(3)  = LIOpen    ;
+    y(4)  = LMOn      ;
+    y(5)  = LSOn      ;
+    y(6)  = LTOn      ;
+    y(7)  = RThrottle ;
+    y(8)  = REOpen    ;
+    y(9)  = RIOpen    ;
+    y(10) = RMOn      ;
+    y(11) = RSOn      ;
+    y(12) = RTOn      ;
+    y(13) = XFOpen    ;
+    y(14) = BOpen     ;  
+    y(15) = RTank_Mass;
+    y(16) = LTank_Mass;
 end
 
-function [LI,RI] = ExampleSubFunction(L,R)
-
-    %% Defaults
-    LI = 0;
-    RI = 0;
-    
-    % Active conditions
-    if (L >= 0.5) 
-        LI = 1;
-    end
-    
-    if (R >= 0.5) 
-        RI = 1;
-    end
-  
-end
