@@ -5,30 +5,22 @@ function y = TestPilot(u)
 
     % Unpack the inputs
     time = u(1);
-
-    % Set default outputs if "pilot" does nothing
-    RefuelSwitch = 0;
-    RefuelQuantity = 0;
-    EnginesOnSwitch = 0;
-
-    % Instrumentation
-    fprintf('Pilot: Time[%f]\n',time);
+    RefuelSwitch = u(2);
+    RefuelQuantity = u(3);
+    RightEngine = u(4);
+    LeftEngine = u(5);
     
-    %% First test
-    if((time >= 1) && (time <= 5))
-        
-        % Do stuff with outputs
-        
-    %% Second test
-    elseif((time >= 10) && (time <= 15))
-    
-        % Do stuff with outputs
-        
+    if RightEngine == 1 && LeftEngine == 1
+        EnginesOnSwitch = 1;
+    else
+            EnginesOnSwitch = 0;
     end
+        
     
     % Pack the outputs
     y(1) = RefuelSwitch;
     y(2) = RefuelQuantity;
     y(3) = EnginesOnSwitch;
+
        
 end
