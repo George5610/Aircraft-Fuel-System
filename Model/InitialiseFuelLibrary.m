@@ -1,8 +1,8 @@
 % FSP-generic initialisations for Fuel Network Simulation
 
 % Add paths to S-function directories
-addpath('C:\Users\smy-zaidi\Desktop\FuelSystemCoursework2020-2021\Model\FuelLibrary');
-addpath('C:\Users\smy-zaidi\Desktop\FuelSystemCoursework2020-2021\Model\FuelLibrary\ProbeBlock');
+addpath('D:\FuelSystemCoursework2020-2021\FuelSystemCoursework2020-2021\Model\FuelLibrary');
+addpath('D:\FuelSystemCoursework2020-2021\FuelSystemCoursework2020-2021\Model\FuelLibrary\ProbeBlock');
 
 % Logic handling
 BooleanThreshold        = 0.5;
@@ -156,3 +156,12 @@ CouplingOffPressure    = 0.01 * Bar2Pascal;
 CouplingResistance     = (1.0 * Bar2Pascal)/((4000.0 - 2300.0) * lpm2kps);
 LinearCouplingResistance = (1.0 * Bar2Pascal)/(3300 * lpm2kps);
 CouplingOffsetPressure = (1500.0 * lpm2kps) * CouplingResistance;
+
+%% Pump Failure Memory
+    %0 = operational, 1 = failed
+    RFP1F = 0; %rightfeedpump1
+    RFP2F = 0; %rightfeedpump2
+    LFP1F = 0; %leftfeedpump1
+    LFP2F = 0; %leftfeedpump2
+    RTPF = 0;  %righttransferpump
+    LTPF = 0;  %lefttransferpump
