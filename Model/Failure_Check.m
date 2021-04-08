@@ -95,7 +95,55 @@ function y = Failure_Check(u)
     else
         LTPF = 0;
     end
+    
+%% Right Engine Failure Check
+    
+    if RThrottleIN ~= RFuelUsed
+        RThrottle = 0;
+        REOpen = 0;
+        RMOn = 0;
+        RSOn = 0;
+        fprintf("Right Engine Fuel Consumption off");
+        
+    end
+    
+%% Left Engine Failure Check
+    
+    if LThrottleIN ~= LFuelUsed
+        LThrottle = 0;
+        LEOpen = 0;
+        LMOn = 0;
+        LSOn = 0;
+        fprintf("Left Engine Fuel Consumption off");
+        
+    end
 
+%% right probe failures
+
+if Rprobe1 == 0 && LProbe1 > 0.01
+    fprintf("right probe1 failed");
+elseif Rprobe1 == 0 && Rprobe2 > 0
+    fprintf("right probe 1 failed");
+end
+
+if Rprobe2 == 0 && Lprobe2 > 0.01
+    fprintf("right probe 2 failed");
+end
+
+%% Left Probe failures
+
+if Lprobe1 == 0 && RProbe1 > 0.01
+    fprintf("left probe1 failed");
+elseif Lprobe1 == 0 && Lprobe2 > 0
+    fprintf("left probe 1 failed");
+end
+
+if Lprobe2 == 0 && Rprobe2 > 0.01
+    fprintf("left probe 2 failed");
+end
+    
+    
+%% packing
     % Pack the outputs
     y(1)  = LThrottle;
     y(2)  = LEOpen   ;
