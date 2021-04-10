@@ -90,18 +90,6 @@ function y = FuelControl(u)
 
     fprintf('Tank Lvls: Time[%f] Right[%f] Left[%f]\n',time,RTank_Mass,LTank_Mass);
     
-%% Bowser Control 
-    Total_Fuel = RTank_Mass + LTank_Mass;
-    if  RefuelSwitch == 1 && Total_Fuel < RefuelQuantity
-        BOpen = 1;
-        RIOpen = 1;
-        LIOpen = 1;
-    else 
-        BOpen = 0;
-        RIOpen = 0;
-        LIOpen = 0;
-    end
- 
 %% Throttle and engine Control
 
     RThrottle = RThrottleIN;
@@ -127,25 +115,26 @@ function y = FuelControl(u)
     end
     
 %%COG controller
+%differance calculator
+    RTankDiff = RTank_Mass - LTank_Mass;
+    LTankDiff = LTank_Mass - RTank_Mass;
 
-if RTank_Mass + 20 > LTank_Mass
-    RTOn = 1;
-    LIOpen = 1;
-else
-    RTOn = 0;
-    LIOpen = 0;
-end
+    if RTankDiff >= 15
+      RTOn = 1;
+      LIOpen = 1;
+    else
+      RTOn = 0;
+      LIOpen = 0;
+    end
 
-if LTank_Mass + 20 > RTank_Mass
-    LTOn = 1;
-    RIOpen = 1;
-else
-    LTOn = 0;
-    RIOpen = 0;
-end
-    
-
-   
+    if LTankDiff >= 15
+       LTOn = 1;
+       RIOpen = 1;
+    else
+       LTOn = 0;
+        RIOpen = 0;
+    end
+     
     
 %% right pump fail check
     if RMOn_Delay == 1 && RFeedPump1Stat == 1
@@ -213,12 +202,9 @@ end
         RMOn = 0;
         RSOn = 0;
     end    
-    
 
-    
-%{
 %% Right Engine Failure Check
-    if RThrottle_Delay ~= RFuelUsed * 0.25
+    if RThrottleIN > 0 && RThrottle_Delay ~= RFuelUsed * 4 && RightStartSwitch == 1 && RFuelUsed > 0
         RThrottle = 0;
         REOpen = 0;
         RMOn = 0;
@@ -229,41 +215,58 @@ end
     
 %%Left Engine Failure Check
     
-    if LThrottle_Delay ~= LFuelUsed * 0.25
+    if LThrottleIN > 0 && LThrottle_Delay ~= LFuelUsed * 4 && LeftStartSwitch == 1 && LFuelUsed > 0
         LThrottle = 0;
         LEOpen = 0;
         LMOn = 0;
         LSOn = 0;
         fprintf("Left Engine Fuel Consumption off\n");
-        
     end
 
-%}
-    
 %%right probe failures
 
-if RProbe1 == 0 && LProbe1 > 0.01
-    fprintf("right probe1 failed");
-elseif RProbe1 == 0 && RProbe2 > 0
-    fprintf("right probe 1 failed");
-end
+    if RProbe1 == 0 && LProbe1 > 0.01
+        fprintf("right probe1 failed");
+    elseif RProbe1 == 0 && RProbe2 > 0
+        fprintf("right probe 1 failed");
+    end
 
-if RProbe2 == 0 && LProbe2 > 0.01
-    fprintf("right probe 2 failed");
-end
+    if RProbe2 == 0 && LProbe2 > 0.01
+        fprintf("right probe 2 failed");
+    end
 
 %% Left Probe failures
 
-if LProbe1 == 0 && RProbe1 > 0.01
-    fprintf("left probe1 failed");
-elseif LProbe1 == 0 && LProbe2 > 0
-    fprintf("left probe 1 failed");
-end
+    if LProbe1 == 0 && RProbe1 > 0.01
+        fprintf("left probe1 failed");
+    elseif LProbe1 == 0 && LProbe2 > 0
+        fprintf("left probe 1 failed");
+    end
 
-if LProbe2 == 0 && RProbe2 > 0.01
-    fprintf("left probe 2 failed");
-end
+    if LProbe2 == 0 && RProbe2 > 0.01
+        fprintf("left probe 2 failed");
+    end
 
+%% Fuel tanks run out condtion
+    if RTank_Mass < 5 && LTank_Mass < 5
+        RMOn = 0;
+        RSOn = 0;
+        LMOn = 0;
+        LSOn = 0;
+        LEOpen = 0;
+        REOpen = 0;
+    end
+
+%% Bowser Control 
+    Total_Fuel = RTank_Mass + LTank_Mass;
+    if  RefuelSwitch == 1 && Total_Fuel < RefuelQuantity
+        BOpen = 1;
+        RIOpen = 1;
+        LIOpen = 1;
+    else 
+        BOpen = 0;
+    end
+    
 %% Pack the outputs
     y(1)  = LThrottle ;
     y(2)  = LEOpen    ;
