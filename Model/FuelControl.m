@@ -11,24 +11,32 @@ function y = FuelControl(u)
     % Inputs from the pilot
     RefuelSwitch   = u(2);
     RefuelQuantity = u(3);
-    StartSwitch    = u(4);
+    LeftStartSwitch = u(4);
+    RightStartSwitch = u(5);
     
     % Inputs from the fuel system 
-    LProbe1        = u(5);  % Left tank Probe 1
-    LProbe2        = u(6);  % Left tank Probe 2
-    LFuelUsed      = u(7);  % LEngBurnt signal from left engine 
-    LFeedPump1Stat = u(8);  % LFP1Stat (Left Feed Pump 1 Status) 
-    LFeedPump2Stat = u(9);  % LFP2Stat (Left Feed Pump 2 Status)
-    LTransPumpStat = u(10); % LTPStat (Left Transfer Pump Status)
+    LProbe1        = u(6);  % Left tank Probe 1
+    LProbe2        = u(7);  % Left tank Probe 2
+    LFuelUsed      = u(8);  % LEngBurnt signal from left engine 
+    LFeedPump1Stat = u(9);  % LFP1Stat (Left Feed Pump 1 Status) 
+    LFeedPump2Stat = u(10);  % LFP2Stat (Left Feed Pump 2 Status)
+    LTransPumpStat = u(11); % LTPStat (Left Transfer Pump Status)
     
-    RProbe1        = u(11); % Right tank Probe 1
-    RProbe2        = u(12); % Right tank Probe 2
-    RFuelUsed      = u(13); % REngBurnt signal from right engine
-    RFeedPump1Stat = u(14); % RFP1Stat (Right Feed Pump 1 Status) 
-    RFeedPump2Stat = u(15); % RFP2Stat (Right Feed Pump 2 Status)
-    RTransPumpStat = u(16); % RTPStat(Right Transfer Pump Status)
-    RThrottleIN = u(17);
-    LThrottleIN = u(18);
+    RProbe1        = u(12); % Right tank Probe 1
+    RProbe2        = u(13); % Right tank Probe 2
+    RFuelUsed      = u(14); % REngBurnt signal from right engine
+    RFeedPump1Stat = u(15); % RFP1Stat (Right Feed Pump 1 Status) 
+    RFeedPump2Stat = u(16); % RFP2Stat (Right Feed Pump 2 Status)
+    RTransPumpStat = u(17); % RTPStat(Right Transfer Pump Status)
+    RThrottleIN    = u(18);
+    LThrottleIN    = u(19);
+    LMOn_Delay     = u(20);
+    LSOn_Delay     = u(21);
+    RMOn_Delay     = u(22);
+    RSOn_Delay     = u(23);
+    RThrottle_Delay = u(24);
+    LThrottle_Delay = u(25);
+    
     % Instrumentation
   %  fprintf('Controller: Time[%f] Left[%f/%f] Right[%f/%f]\n',time,LProbe1,LProbe2,RProbe1,RProbe2);
     
@@ -47,8 +55,8 @@ function y = FuelControl(u)
     RTOn      = 0.0;  % Right transfer pump on
     XFOpen    = 0.0;  % Crossfeed valve open
     BOpen     = 0.0;  % Bowser valve closed
-    RTank_Mass = 0.0;
-    LTank_Mass = 0.0;
+    RTank_Mass = 0.0; % the tank mass
+    LTank_Mass = 0.0; % the tank mass
     
 
     
@@ -82,7 +90,7 @@ function y = FuelControl(u)
 
     fprintf('Tank Lvls: Time[%f] Right[%f] Left[%f]\n',time,RTank_Mass,LTank_Mass);
     
-%% Bowser Control (temp sol)
+%% Bowser Control 
     Total_Fuel = RTank_Mass + LTank_Mass;
     if  RefuelSwitch == 1 && Total_Fuel < RefuelQuantity
         BOpen = 1;
@@ -94,23 +102,154 @@ function y = FuelControl(u)
         LIOpen = 0;
     end
  
-%% Throttle Control
+%% Throttle and engine Control
 
-    RThrottleIN = RThrottle;
-    LThrottleIN = LThrottle;
+    RThrottle = RThrottleIN;
+    LThrottle = LThrottleIN;
     
-    if StartSwitch == 1
+    if RightStartSwitch == 1
        RMOn = 1;
-       LMOn = 1;
        REOpen = 1;
-       LEOpen = 1;
        
     else
        RMOn = 0;
-       LMOn = 0;
        REOpen = 0;
+    end
+    
+    if LeftStartSwitch == 1
+        LMOn = 1;
+        LEOpen = 1;
+        
+    else
+        LMOn = 0;
+        LEOpen = 0;
+        
+    end
+    
+%%COG controller
+
+if RTank_Mass + 20 > LTank_Mass
+    RTOn = 1;
+    LIOpen = 1;
+else
+    RTOn = 0;
+    LIOpen = 0;
+end
+
+if LTank_Mass + 20 > RTank_Mass
+    LTOn = 1;
+    RIOpen = 1;
+else
+    LTOn = 0;
+    RIOpen = 0;
+end
+    
+
+   
+    
+%% right pump fail check
+    if RMOn_Delay == 1 && RFeedPump1Stat == 1
+       fprintf("Right Engine Feed Pump 1 Failure")
+       
+       RMOn = 0;  % Right feed pump A off
+       RSOn = 1;  % Right feed pump B on
+    end
+    
+%% left pump fail check
+    if LMOn_Delay == 1 && LFeedPump1Stat == 1
+       fprintf("Left Engine Feed Pump 1 Failure")
+       
+       LMOn = 0;  % Left feed pump A off
+       LSOn = 1;  % Left feed pump B on
+   
+    end
+    
+ %% right Supp pump fail check
+    if RSOn_Delay == 1 && RFeedPump2Stat == 1
+       fprintf("Right Engine Feed Pump 2 Failure, closing engine valve")
+       
+       RMOn = 0;  % Right feed pump A off
+       RSOn = 0;  % Right feed pump B off
+       REOpen = 0;
+    end
+    
+%% left Supp pump fail check
+    if LSOn_Delay == 1 && LFeedPump2Stat == 1
+       fprintf("Left Engine Feed Pump 2 Failure, closing engine valve")
+       
+       LMOn = 0;  % Left feed pump A off
+       LSOn = 0;  % Left feed pump B on
        LEOpen = 0;
     end
+    
+%% Right Transfer Pump Fail Check
+
+    if RTOn == 1 && RTransPumpStat == 1
+       fprintf("Right Transfer Pump Failed")
+    end
+    
+%% Left Transfer Pump Fail Check
+
+    if LTOn == 1 && LTransPumpStat == 1
+       fprintf("Left Transfer Pump Failed")
+    end
+ 
+%% Duel pump failures
+
+%left
+    if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1
+        
+    
+
+    
+%{
+%% Right Engine Failure Check
+    if RThrottle_Delay ~= RFuelUsed * 0.25
+        RThrottle = 0;
+        REOpen = 0;
+        RMOn = 0;
+        RSOn = 0;
+        fprintf("Right Engine Fuel Consumption off\n");
+        
+    end
+    
+%%Left Engine Failure Check
+    
+    if LThrottle_Delay ~= LFuelUsed * 0.25
+        LThrottle = 0;
+        LEOpen = 0;
+        LMOn = 0;
+        LSOn = 0;
+        fprintf("Left Engine Fuel Consumption off\n");
+        
+    end
+
+%}
+    
+%%right probe failures
+
+if RProbe1 == 0 && LProbe1 > 0.01
+    fprintf("right probe1 failed");
+elseif RProbe1 == 0 && RProbe2 > 0
+    fprintf("right probe 1 failed");
+end
+
+if RProbe2 == 0 && LProbe2 > 0.01
+    fprintf("right probe 2 failed");
+end
+
+%% Left Probe failures
+
+if LProbe1 == 0 && RProbe1 > 0.01
+    fprintf("left probe1 failed");
+elseif LProbe1 == 0 && LProbe2 > 0
+    fprintf("left probe 1 failed");
+end
+
+if LProbe2 == 0 && RProbe2 > 0.01
+    fprintf("left probe 2 failed");
+end
+
 %% Pack the outputs
     y(1)  = LThrottle ;
     y(2)  = LEOpen    ;
@@ -129,4 +268,3 @@ function y = FuelControl(u)
     y(15) = RTank_Mass;
     y(16) = LTank_Mass;
 end
-
