@@ -198,7 +198,21 @@ end
 
 %left
     if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1
-        
+        XFOpen = 1;
+        RMOn = 1;
+        RSOn = 1;
+        LMOn = 0;
+        LSOn = 0;
+    end
+    
+%right
+    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1
+        XFOpen = 1;
+        LMOn = 1;
+        LSOn = 1;
+        RMOn = 0;
+        RSOn = 0;
+    end    
     
 
     
