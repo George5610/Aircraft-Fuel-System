@@ -1,9 +1,4 @@
-% FuelControl function arguments u1..u16
-% FuelControl function returns y1..y14
-
 function y = FuelControl(u)
-    % signals on Simulink schamtic
-    %t
 
     % Time in the outside world 
     time = u(1);
@@ -36,6 +31,8 @@ function y = FuelControl(u)
     RSOn_Delay     = u(23);
     RThrottle_Delay = u(24);
     LThrottle_Delay = u(25);
+    RTOn_Delay     = u(26);
+    LTOn_Delay     = u(27);
     
     % Instrumentation
   %  fprintf('Controller: Time[%f] Left[%f/%f] Right[%f/%f]\n',time,LProbe1,LProbe2,RProbe1,RProbe2);
@@ -57,7 +54,8 @@ function y = FuelControl(u)
     BOpen     = 0.0;  % Bowser valve closed
     RTank_Mass = 0.0; % the tank mass
     LTank_Mass = 0.0; % the tank mass
-    
+    REngMem = 0;
+    LEngMem = 0;
 
     
 %% right tank volume
@@ -88,14 +86,37 @@ function y = FuelControl(u)
     RTank_Mass = RFuel_Vol * 797;
     LTank_Mass = LFuel_Vol * 797;
 
-    fprintf('Tank Lvls: Time[%f] Right[%f] Left[%f]\n',time,RTank_Mass,LTank_Mass);
-    
+  %  fprintf('Tank Lvls: Time[%f] Right[%f] Left[%f]\n',time,RTank_Mass,LTank_Mass);
+
 %% Throttle and engine Control
 
     RThrottle = RThrottleIN;
     LThrottle = LThrottleIN;
     
-    if RightStartSwitch == 1
+%% Right Engine Failure Check
+    if RThrottleIN > 0 && RThrottle_Delay ~= RFuelUsed * 4 && RightStartSwitch == 1 && RFuelUsed > 0
+        RThrottle = 0;
+        REOpen = 0;
+        RMOn = 0;
+        RSOn = 0;
+        fprintf("Right Engine Fuel Consumption off\n");
+        REngMem = 1;
+    end
+    
+%%Left Engine Failure Check
+    
+    if LThrottleIN > 0 && LThrottle_Delay ~= LFuelUsed * 4 && LeftStartSwitch == 1 && LFuelUsed > 0
+        LThrottle = 0;
+        LEOpen = 0;
+        LMOn = 0;
+        LSOn = 0;
+        fprintf("Left Engine Fuel Consumption off\n");
+        LEngMem = 1;
+    end 
+    
+    
+%% engines on
+    if RightStartSwitch == 1 && REngMem == 0
        RMOn = 1;
        REOpen = 1;
        
@@ -104,7 +125,7 @@ function y = FuelControl(u)
        REOpen = 0;
     end
     
-    if LeftStartSwitch == 1
+    if LeftStartSwitch == 1 && LEngMem == 0
         LMOn = 1;
         LEOpen = 1;
         
@@ -135,7 +156,7 @@ function y = FuelControl(u)
         RIOpen = 0;
     end
      
-    
+ 
 %% right pump fail check
     if RMOn_Delay == 1 && RFeedPump1Stat == 1
        fprintf("Right Engine Feed Pump 1 Failure")
@@ -173,20 +194,20 @@ function y = FuelControl(u)
     
 %% Right Transfer Pump Fail Check
 
-    if RTOn == 1 && RTransPumpStat == 1
-       fprintf("Right Transfer Pump Failed")
+    if RTOn_Delay == 1 && RTransPumpStat == 1
+       fprintf("Right Transfer Pump Failed\n")
     end
     
 %% Left Transfer Pump Fail Check
 
-    if LTOn == 1 && LTransPumpStat == 1
-       fprintf("Left Transfer Pump Failed")
+    if LTOn_Delay == 1 && LTransPumpStat == 1
+       fprintf("Left Transfer Pump Failed\n")
     end
  
 %% Duel pump failures
 
 %left
-    if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1
+    if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1 && REngMem == 0
         XFOpen = 1;
         RMOn = 1;
         RSOn = 1;
@@ -195,33 +216,13 @@ function y = FuelControl(u)
     end
     
 %right
-    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1
+    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1 && LEngMem == 0
         XFOpen = 1;
         LMOn = 1;
         LSOn = 1;
         RMOn = 0;
         RSOn = 0;
     end    
-
-%% Right Engine Failure Check
-    if RThrottleIN > 0 && RThrottle_Delay ~= RFuelUsed * 4 && RightStartSwitch == 1 && RFuelUsed > 0
-        RThrottle = 0;
-        REOpen = 0;
-        RMOn = 0;
-        RSOn = 0;
-        fprintf("Right Engine Fuel Consumption off\n");
-        
-    end
-    
-%%Left Engine Failure Check
-    
-    if LThrottleIN > 0 && LThrottle_Delay ~= LFuelUsed * 4 && LeftStartSwitch == 1 && LFuelUsed > 0
-        LThrottle = 0;
-        LEOpen = 0;
-        LMOn = 0;
-        LSOn = 0;
-        fprintf("Left Engine Fuel Consumption off\n");
-    end
 
 %%right probe failures
 
@@ -284,4 +285,5 @@ function y = FuelControl(u)
     y(14) = BOpen     ;  
     y(15) = RTank_Mass;
     y(16) = LTank_Mass;
+    y(17) = LEngMem;
 end
