@@ -92,6 +92,7 @@ function y = FuelControl(u)
     LThrottle = LThrottleIN;
     
 %% Right Engine Failure Check
+%{
     persistent REFail
     if isempty(REFail)
         REFail = 0;
@@ -137,9 +138,9 @@ function y = FuelControl(u)
         
     end
     
-    
+    %}    
 %% engines on
-    if RightStartSwitch == 1 && RThrottle > 0
+    if RightStartSwitch == 1 && RThrottle > 0 && RTank_Mass > 20
        RMOn = 1;
        REOpen = 1;
        
@@ -148,7 +149,7 @@ function y = FuelControl(u)
        REOpen = 0;
     end
     
-    if LeftStartSwitch == 1 && LThrottle > 0
+    if LeftStartSwitch == 1 && LThrottle > 0 && LTank_Mass > 20
         LMOn = 1;
         LEOpen = 1;
         
@@ -157,7 +158,7 @@ function y = FuelControl(u)
         LEOpen = 0;
         
     end
-    
+
 %%COG controller
 %differance calculator
     RTankDiff = RTank_Mass - LTank_Mass;
@@ -180,57 +181,119 @@ function y = FuelControl(u)
     end
      
  
-%% right pump fail check
+%% right main pump fail check
+
+    persistent RMPFail
+    if isempty(RMPFail)
+        RMPFail = 0;
+    end
+    
     if RMOn_Delay == 1 && RFeedPump1Stat == 1
-       fprintf("Right Engine Feed Pump 1 Failure")
+        RMPFail = 1;
+    end
+    
+    if RMPFail == 1
+        
+       fprintf("Right Engine Feed Pump 1 Failure\n")
        
        RMOn = 0;  % Right feed pump A off
        RSOn = 1;  % Right feed pump B on
     end
     
-%% left pump fail check
+%% Left main Pump Fail    
+    persistent LMPFail
+    if isempty(LMPFail)
+        LMPFail = 0;
+    end
+    
     if LMOn_Delay == 1 && LFeedPump1Stat == 1
-       fprintf("Left Engine Feed Pump 1 Failure")
+        LMPFail = 1;
+    end
+    
+    if LMPFail == 1
+        
+       fprintf("Right Engine Feed Pump 1 Failure\n")
        
-       LMOn = 0;  % Left feed pump A off
-       LSOn = 1;  % Left feed pump B on
-   
+       LMOn = 0;  % Right feed pump A off
+       LSOn = 1;  % Right feed pump B on
     end
     
  %% right Supp pump fail check
+ persistent RSPFail
+ if isempty(RSPFail)
+     RSPFail = 0;
+ end
     if RSOn_Delay == 1 && RFeedPump2Stat == 1
-       fprintf("Right Engine Feed Pump 2 Failure, closing engine valve")
+        RSPFail = 1;
+    end
+    
+    if RSPFail == 1
+       fprintf("Right Engine Feed Pump 2 Failure, closing engine valve\n")
        
        RMOn = 0;  % Right feed pump A off
        RSOn = 0;  % Right feed pump B off
        REOpen = 0;
     end
     
-%% left Supp pump fail check
+ %% right Supp pump fail check
+ persistent LSPFail
+ if isempty(LSPFail)
+     LSPFail = 0;
+ end
     if LSOn_Delay == 1 && LFeedPump2Stat == 1
-       fprintf("Left Engine Feed Pump 2 Failure, closing engine valve")
+        LSPFail = 1;
+    end
+    
+    if LSPFail == 1
+       fprintf("Left Engine Feed Pump 2 Failure, closing engine valve\n")
        
-       LMOn = 0;  % Left feed pump A off
-       LSOn = 0;  % Left feed pump B on
+       LMOn = 0;  % left feed pump A off
+       LSOn = 0;  % left feed pump B off
        LEOpen = 0;
     end
     
 %% Right Transfer Pump Fail Check
-
+ persistent RTPFail
+ if isempty(RTPFail)
+     RTPFail = 0;
+ end
+ 
     if RTOn_Delay == 1 && RTransPumpStat == 1
-       fprintf("Right Transfer Pump Failed\n")
+       RTPFail = 1;
     end
     
-%% Left Transfer Pump Fail Check
-
+    if RTPFail == 1
+        fprintf("Right Transfer Pump Failed\n")
+        RTOn = 0;
+    end
+    
+%% LEft Transfer Pump Fail Check
+ persistent LTPFail
+ if isempty(LTPFail)
+     LTPFail = 0;
+ end
+ 
     if LTOn_Delay == 1 && LTransPumpStat == 1
-       fprintf("Left Transfer Pump Failed\n")
+       LTPFail = 1;
+    end
+    
+    if LTPFail == 1
+        fprintf("Left Transfer Pump Failed\n")
+        LTOn = 0;
     end
  
 %% Duel pump failures
 
 %left
+ persistent DLPFail
+ if isempty(DLPFail)
+     DLPFail = 0;
+ end
     if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1 && LeftStartSwitch == 1
+        DLPFail = 1;
+    end
+    
+    if DLPFail == 1
         XFOpen = 1;
         RMOn = 1;
         RSOn = 1;
@@ -239,48 +302,84 @@ function y = FuelControl(u)
     end
     
 %right
-    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1 && RightStartSwitch == 1
+ persistent DRPFail
+ if isempty(DRPFail)
+     DRPFail = 0;
+ end
+    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1 && ReftStartSwitch == 1
+        DRPFail = 1;
+    end
+    
+    if DRPFail == 1
         XFOpen = 1;
-        LMOn = 1;
-        LSOn = 1;
         RMOn = 0;
         RSOn = 0;
-    end    
+        LMOn = 1;
+        LSOn = 1;
+    end  
 
-%%right probe failures
 
-    if RProbe1 == 0 && LProbe1 > 0.01
-        fprintf("right probe1 failed");
-    elseif RProbe1 == 0 && RProbe2 > 0
-        fprintf("right probe 1 failed");
+%% Fuel tanks run out condtion
+%right
+ persistent RTankCrit
+ if isempty(RTankCrit)
+     RTankCrit = 0;
+ end  
+
+    if RTank_Mass < 20 && RightStartSwitch == 1
+      RTankCrit = 1;
+
+    end
+    
+    if RTankCrit == 1
+       RMOn = 0;
+       RSOn = 0;
+       REOpen = 0;
+       fprintf("RTank Mass Critical\n");    
+    end
+    
+    % left
+ persistent LTankCrit
+ if isempty(LTankCrit)
+     LTankCrit = 0;
+ end  
+
+    if LTank_Mass < 20 && LeftStartSwitch == 1
+      LTankCrit = 1;
+
+    end
+    
+    if LTankCrit == 1
+       LMOn = 0;
+       LSOn = 0;
+       LEOpen = 0;
+       fprintf("LTank Mass Critical\n");    
     end
 
-    if RProbe2 == 0 && LProbe2 > 0.01
-        fprintf("right probe 2 failed");
+%% right probe failures
+
+    if RProbe1 == 0 && LProbe1 > 0.01
+        fprintf("Right probe1 failed\n");
+    elseif RProbe1 == 0 && RProbe2 > 0
+        fprintf("Right probe 1 failed\n");
+    end
+
+    if RProbe2 == 0 && LProbe2 > 0.01 && RTankCrit ~= 1
+        fprintf("Right probe 2 failed\n");
     end
 
 %% Left Probe failures
 
     if LProbe1 == 0 && RProbe1 > 0.01
-        fprintf("left probe1 failed");
+        fprintf("Left probe1 failed\n");
     elseif LProbe1 == 0 && LProbe2 > 0
-        fprintf("left probe 1 failed");
+        fprintf("Left probe 1 failed\n");
     end
 
-    if LProbe2 == 0 && RProbe2 > 0.01
-        fprintf("left probe 2 failed");
+    if LProbe2 == 0 && RProbe2 > 0.01 && RTankCrit ~= 1
+        fprintf("Left probe 2 failed\n");
     end
-
-%% Fuel tanks run out condtion
-    if RTank_Mass < 5 && LTank_Mass < 5
-        RMOn = 0;
-        RSOn = 0;
-        LMOn = 0;
-        LSOn = 0;
-        LEOpen = 0;
-        REOpen = 0;
-    end
-
+    
 %% Bowser Control 
     Total_Fuel = RTank_Mass + LTank_Mass;
     if  RefuelSwitch == 1 && Total_Fuel < RefuelQuantity
