@@ -10,8 +10,7 @@ function y = TestPilot(u)
     RefuelQuantity = u(3);
     RightEngine = u(4);
     LeftEngine = u(5);
-    
-        
+
     
     % Pack the outputs
     y(1) = RefuelSwitch;

@@ -54,8 +54,6 @@ function y = FuelControl(u)
     BOpen     = 0.0;  % Bowser valve closed
     RTank_Mass = 0.0; % the tank mass
     LTank_Mass = 0.0; % the tank mass
-    REngMem = 0;
-    LEngMem = 0;
 
     
 %% right tank volume
@@ -94,29 +92,54 @@ function y = FuelControl(u)
     LThrottle = LThrottleIN;
     
 %% Right Engine Failure Check
+    persistent REFail
+    if isempty(REFail)
+        REFail = 0;
+    end
+    
     if RThrottleIN > 0 && RThrottle_Delay ~= RFuelUsed * 4 && RightStartSwitch == 1 && RFuelUsed > 0
+        REFail = 1;
+        
+    end
+    
+    if REFail == 1
+        
         RThrottle = 0;
         REOpen = 0;
         RMOn = 0;
         RSOn = 0;
         fprintf("Right Engine Fuel Consumption off\n");
-        REngMem = 1;
+        RightStartSwitch = 0;       
+        
     end
     
-%%Left Engine Failure Check
+%% Left Engine Failure Check
+
+    persistent LEFail
+    if isempty(LEFail)
+        LEFail = 0;
+    end
     
     if LThrottleIN > 0 && LThrottle_Delay ~= LFuelUsed * 4 && LeftStartSwitch == 1 && LFuelUsed > 0
+
+        LEFail = 1;
+
+    end
+    
+    if LEFail == 1 && LeftStartSwitch == 1
+        
         LThrottle = 0;
         LEOpen = 0;
         LMOn = 0;
         LSOn = 0;
         fprintf("Left Engine Fuel Consumption off\n");
-        LEngMem = 1;
-    end 
+        LeftStartSwitch = 0;
+        
+    end
     
     
 %% engines on
-    if RightStartSwitch == 1 && REngMem == 0
+    if RightStartSwitch == 1 && RThrottle > 0
        RMOn = 1;
        REOpen = 1;
        
@@ -125,7 +148,7 @@ function y = FuelControl(u)
        REOpen = 0;
     end
     
-    if LeftStartSwitch == 1 && LEngMem == 0
+    if LeftStartSwitch == 1 && LThrottle > 0
         LMOn = 1;
         LEOpen = 1;
         
@@ -207,7 +230,7 @@ function y = FuelControl(u)
 %% Duel pump failures
 
 %left
-    if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1 && REngMem == 0
+    if LMOn_Delay == 1 && LFeedPump1Stat == 1 && LSOn_Delay == 1 && LFeedPump2Stat == 1 && LeftStartSwitch == 1
         XFOpen = 1;
         RMOn = 1;
         RSOn = 1;
@@ -216,7 +239,7 @@ function y = FuelControl(u)
     end
     
 %right
-    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1 && LEngMem == 0
+    if RMOn_Delay == 1 && RFeedPump1Stat == 1 && RSOn_Delay == 1 && RFeedPump2Stat == 1 && RightStartSwitch == 1
         XFOpen = 1;
         LMOn = 1;
         LSOn = 1;
@@ -285,5 +308,4 @@ function y = FuelControl(u)
     y(14) = BOpen     ;  
     y(15) = RTank_Mass;
     y(16) = LTank_Mass;
-    y(17) = LEngMem;
 end
