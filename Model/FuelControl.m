@@ -217,8 +217,8 @@ function y = FuelControl(u)
        LMOn = 0;  % Right feed pump A off
        LSOn = 1;  % Right feed pump B on
     end
-    
- %% right Supp pump fail check
+
+ %% Right Supp pump fail check
  persistent RSPFail
  if isempty(RSPFail)
      RSPFail = 0;
@@ -228,14 +228,15 @@ function y = FuelControl(u)
     end
     
     if RSPFail == 1
-       fprintf("Right Engine Feed Pump 2 Failure, closing engine valve\n")
-       
-       RMOn = 0;  % Right feed pump A off
-       RSOn = 0;  % Right feed pump B off
-       REOpen = 0;
+        fprintf("Duel right pump failure, enabling x feed\n");
+        XFOpen = 1;
+        RMOn = 0;
+        RSOn = 0;
+        LMOn = 1;
+        LSOn = 1;
     end
     
- %% right Supp pump fail check
+ %% Left Supp pump fail check
  persistent LSPFail
  if isempty(LSPFail)
      LSPFail = 0;
@@ -245,11 +246,12 @@ function y = FuelControl(u)
     end
     
     if LSPFail == 1
-       fprintf("Left Engine Feed Pump 2 Failure, closing engine valve\n")
-       
-       LMOn = 0;  % left feed pump A off
-       LSOn = 0;  % left feed pump B off
-       LEOpen = 0;
+        fprintf("Duel left pump failure, enabling x feed\n");
+        XFOpen = 1;
+        RMOn = 1;
+        RSOn = 1;
+        LMOn = 0;
+        LSOn = 0;
     end
     
 %% Right Transfer Pump Fail Check
@@ -283,7 +285,7 @@ function y = FuelControl(u)
     end
  
 %% Duel pump failures
-
+%{
 %left
  persistent DLPFail
  if isempty(DLPFail)
@@ -318,7 +320,7 @@ function y = FuelControl(u)
         LSOn = 1;
     end  
 
-
+%}
 %% Fuel tanks run out condtion
 %right
  persistent RTankCrit
